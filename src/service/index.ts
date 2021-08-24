@@ -71,7 +71,7 @@ export const getValueInfo = async (code: number): Promise<any> => {
 
 // 详情信息
 export const getFundDetail = async (code: number) => {
-  const path = `http://j5.dfcfw.com/sc/tfs/qt/v2.0.1/${code}.json`;
+  const path = `https://j5.dfcfw.com/sc/tfs/qt/v2.0.1/${code}.json`;
   return axios.get(path)
     .then(({ data }) => {
       return data;
