@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Radio, Select } from 'antd';
+import { Radio } from 'antd';
 import LineChart from './lineChart';
-import { timeRelativeList, indexList } from 'src/utils/enum';
-import { getBenefitData } from 'src/service';
+import { timeRelativeList } from 'src/utils/enum';
+import { getBenefitData2 } from 'src/service';
+import moment from 'moment';
 
 export default function (props) {
   const { fundCode } = props;
   const [chartData, setChartData] = useState([] as any);
-  const [range, setRange] = useState('q');
+  const [range, setRange] = useState('-30');
   const [indexCode, setIndexCode] = useState('000300');
 
   const fetchData = async () => {
-    const data = await getBenefitData(fundCode, indexCode, range);
-    setChartData(data);
+    const data: any = await getBenefitData2(fundCode);
+    const start = moment().subtract({days: Math.abs(Number(range))}).startOf('day');
+    setChartData(range ? data.filter((item) => moment(item.date).isAfter(start)) : data);
   }
 
   useEffect(() => {
@@ -28,11 +30,11 @@ export default function (props) {
   }
 
   return (<div className="fund-line-chart">
-    <Select style={{ width: 120 }} value={indexCode} onChange={handleIndexChange}>
+    {/* <Select style={{ width: 120 }} value={indexCode} onChange={handleIndexChange}>
       {indexList.map((index) => (
         <Select.Option key={index.code} value={index.code}>{index.name}</Select.Option>
       ))}
-    </Select>
+    </Select> */}
 
     <Radio.Group value={range} onChange={handleRangeChange} style={{ marginBottom: 16, marginLeft: 12 }}>
       {timeRelativeList.map(
@@ -45,6 +47,6 @@ export default function (props) {
         </Radio.Button>
       ))}
     </Radio.Group>
-    {chartData.length ? <LineChart data={chartData} /> : '暂无数据'}
+    {chartData?.length ? <LineChart data={chartData} /> : '暂无数据'}
   </div>)
 }

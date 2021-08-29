@@ -19,7 +19,7 @@ const { Option } = Select;
 const formatRMB = addChineseUnit();
 
 const getTags = (record) => {
-  return flatten(record.JJBQ?.Datas.map((data) => {
+  return flatten(record.JJBQ?.Datas?.map((data) => {
     if (Number(data.FEATYPE) < 3) {
       return data.TAGLIST.map((tag) => tag.FEATAG !== '--' ? tag.FEATAG : tag.FEANAME);
     }
@@ -193,7 +193,7 @@ function FundList({ dispatch }) {
         </Col>
         <Col span={16} className="table-nested-col">
           <Card title="累积收益率走势">
-            <FundLine initialData={record.benefit} fundCode={record.FCODE} />
+            <FundLine fundCode={record.FCODE} />
           </Card>
           <Card title="基金持仓">
             <Table

@@ -14,29 +14,30 @@ export const timeRelative = {
 export const timeRelativeList = [
   {
     label: '近1月',
-    value: 'm',
+    value: '-30',
   }, {
     label: '近3月',
-    value: 'q',
+    value: '-90',
   }, {
     label: '近6月',
-    value: 'hy',
-  }, {
-    label: '近1年',
-    value: 'y',
-  }, {
-    label: '近3年',
-    value: 'try',
-  }, {
-    label: '近5年',
-    value: 'fiy',
-  }, {
-    label: '今年',
-    value: 'sy',
-  }, {
-    label: '成立以来',
-    value: 'se',
-  }
+    value: '',
+  },
+  // {
+  //   label: '近1年',
+  //   value: 'y',
+  // }, {
+  //   label: '近3年',
+  //   value: 'try',
+  // }, {
+  //   label: '近5年',
+  //   value: 'fiy',
+  // }, {
+  //   label: '今年',
+  //   value: 'sy',
+  // }, {
+  //   label: '成立以来',
+  //   value: 'se',
+  // }
 ];
 
 export const comparTimeRelativeList = [

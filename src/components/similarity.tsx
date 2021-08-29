@@ -100,7 +100,7 @@ function Similarity({ funds = [] as any[] }) {
         name: fund.SHORTNAME,
         stocks: fund?.JJCC?.Datas?.InverstPosition?.fundStocks || [],
       }));
-      fetchData();
+      // fetchData();
       const [stockRes, industryRes ] = calculateSimilarity(list);
       setStockSimilarity(stockRes);
       setIndustrySimilarity(industryRes);
@@ -142,7 +142,7 @@ function Similarity({ funds = [] as any[] }) {
           <Col span={6}>
             <RadarChart data={industryRadarData} formatter={radarTooltipFormatter} />
           </Col>
-          <Col span={8} offset={2}>
+          {/* <Col span={8} offset={2}>
           <Radio.Group value={range} onChange={handleRangeChange} style={{ marginBottom: 16 }}>
             {comparTimeRelativeList.map(
               (time) => (
@@ -155,7 +155,7 @@ function Similarity({ funds = [] as any[] }) {
             ))}
           </Radio.Group>
             <LineChart data={chartData} />
-          </Col>
+          </Col> */}
         </Row>
       </Card>
       <Card title="重复持仓" style={{marginTop: 16}}>

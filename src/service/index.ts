@@ -8,6 +8,42 @@ export interface FundInfo {
   name: string
 }
 
+window['getJSONP'] = (url: string, callback: Function, opt?: {
+  onload?: Function
+}) => {
+  var cbnum = "cb" + window['getJSONP'].counter++;
+  var cbname = "getJSONP." + cbnum;
+
+  if (url.indexOf("?") == -1) {
+    url += "?callback=" + cbname;
+    url += "?cb=" + cbname;
+  } else {
+    url += "&callback=" + cbname;
+    url += "&cb=" + cbname;
+  }
+
+  var script = document.createElement("script");
+  script.referrerPolicy = "no-referrer";
+  window['getJSONP'][cbnum] = function (response) {
+    try {
+      callback(response);
+    }
+    finally {
+      delete window['getJSONP'][cbnum];
+      script.parentNode!.removeChild(script);
+    }
+  };
+
+  script.src = url
+  if (opt && opt.onload) {
+    script.onload = () => {
+      opt.onload!()
+    }
+  }
+  document.body.appendChild(script);
+}
+window['getJSONP'].counter = 0;
+
 // 股票实时净值
 export const getStockValue = async (codes: string[]) => {
   const path = 'https://push2.eastmoney.com/api/qt/ulist.np/get?fltt=2&invt=2&fields=f2,f3,f12,f14,f9&ut=267f9ad526dbe6b0262ab19316f5a25b&secids=';
@@ -28,8 +64,8 @@ export const searchFund = async (key: string): Promise<FundInfo[]> => {
   return new Promise((resolve) => {
     const path = `https://fundsuggest.eastmoney.com/FundSearch/api/FundSearchAPI.ashx?m=10&t=700&IsNeedBaseInfo=0&IsNeedZTInfo=0&key=${key}&_=${Date.now()}`
 
-   fetchJsonp(path)
-      .then(function(response) {
+    fetchJsonp(path)
+      .then(function (response) {
         return response.json()
       })
       .then((resp: any) => {
@@ -47,16 +83,16 @@ export const searchFund = async (key: string): Promise<FundInfo[]> => {
 export const getFundInfo = async (code: string): Promise<any> => {
   return new Promise((resolve) => {
     Promise.all([getValueInfo(code), getFundDetail(code)])
-    .then(async ([value, detail]) => {
-      const stocks = detail?.JJCC?.Datas?.InverstPosition.fundStocks || [];
-      const stockValue = await getStockValue(stocks.map(stock => stock.GPDM));
-      resolve({
-        ...value,
-        ...detail,
-        key: value.FCODE,
-        stockValue,
-      });
-    })
+      .then(async ([value, detail]) => {
+        const stocks = detail?.JJCC?.Datas?.InverstPosition.fundStocks || [];
+        const stockValue = await getStockValue(stocks.map(stock => stock.GPDM));
+        resolve({
+          ...value,
+          ...detail,
+          key: value.FCODE,
+          stockValue,
+        });
+      })
   })
 }
 
@@ -79,49 +115,62 @@ export const getFundDetail = async (code: string) => {
 }
 
 // 单支基金收益率数据 基金-同类平均-指数
-export const getBenefitData = async (code: string, indexCode: string = '000300', type: string = 'q')  => {
+export const getBenefitData = async (code: string, indexCode: string = '000300', type: string = 'q') => {
   const path = `https://api.fund.eastmoney.com/pinzhong/LJSYLZS?fundCode=${code}&indexcode=${indexCode}&type=${type}&_=${Date.now()}`;
-  return fetchJsonp(path)
-      .then(function(response) {
-        return response.json()
-      })
-      .then((resp: any) => {
-        const data = resp?.Data?.length ? resp.Data : [];
-        return data.reduce((accum, fund) => {
+  return window['getJSONP'](path, (resp) => {
+    const data = resp?.Data?.length ? resp.Data : [];
+    return data?.reduce((accum, fund) => {
+      const name = fund.name;
+      return accum.concat(fund.data.map((item) => ({
+        name,
+        date: moment(item[0]).format('YYYY-MM-DD'),
+        value: item[1],
+      })));
+    }, []) || [];
+  })
+}
+
+export const getComparedBenefit = async (codes: string[], type: string = 'threeyear') => {
+  const path = `https://api.fund.eastmoney.com/FundCompare/LJSYL?bzdm=${codes.join(',')}&c=${type}&_=${Date.now()}`;
+  return window['getJSONP'](path, (resp) => {
+    const data = resp?.Data?.length ? resp.Data : [];
+    const obj = JSON.parse(data)
+    const graph = obj?.graph || [];
+    const dataProvider = obj?.dataProvider || [];
+    const fundMap = {};
+    graph.forEach(fund => {
+      fundMap[fund.valueField] = fund.name;
+    });
+    return dataProvider.reduce((accum, item) => {
+      const curData = codes.map((code) => ({
+        name: fundMap[code],
+        date: item.date,
+        value: item[code],
+      }));
+      return accum.concat(curData);
+    }, []);
+  })
+}
+
+export const getBenefitData2 = async (code: string) => {
+  const path = `https://fund.eastmoney.com/pingzhongdata/${code}.js?v=${moment().format('yyyyMMddHHmmss')}`;
+  return new Promise((resolve) => {
+    window['getJSONP'](path, (resp) => {
+    }, {
+      onload: () => {
+        const data: any[] = window['Data_grandTotal'] || [] // 历史净值
+        resolve(data.reduce((accum, fund) => {
           const name = fund.name;
           return accum.concat(fund.data.map((item) => ({
             name,
             date: moment(item[0]).format('YYYY-MM-DD'),
             value: item[1],
           })));
-        }, []);
-      })
-}
+        }, []) || []);
+      }
+    })
 
-export const getComparedBenefit = async (codes: string[], type: string = 'threeyear') => {
-  const path = `https://api.fund.eastmoney.com/FundCompare/LJSYL?bzdm=${codes.join(',')}&c=${type}&_=${Date.now()}`;
-  return fetchJsonp(path)
-      .then(function(response) {
-        return response.json()
-      })
-      .then((resp: any) => {
-        const data = resp?.Data?.length ? resp.Data : [];
-        const obj = JSON.parse(data)
-        const graph = obj?.graph || [];
-        const dataProvider = obj?.dataProvider || [];
-        const fundMap = {};
-        graph.forEach(fund => {
-          fundMap[fund.valueField] = fund.name;
-        });
-        return dataProvider.reduce((accum, item) => {
-          const curData = codes.map((code) => ({
-            name: fundMap[code],
-            date: item.date,
-            value: item[code],
-          }));
-          return accum.concat(curData);
-        }, []);
-      })
+  })
 }
 
 
