@@ -26,7 +26,6 @@ function fallbackCopyTextToClipboard(text) {
     const successful = document.execCommand('copy');
     result = Boolean(successful);
   } catch (err) {
-    console.error('Fallback: Oops, unable to copy', err);
     result = false;
   }
 
@@ -45,6 +44,15 @@ export function copyTextToClipboard(text) {
       resolve(false);
     });
   })
+}
+
+export function sendLog(value) {
+  try {
+    window['_hmt'].push(['_trackEvent', 'fundlist', 'click', value]);
+    window['logEvent']?.('select_content', {
+      value,
+    });
+  } catch(e) {};
 }
 
 /**

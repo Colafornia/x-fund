@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { useParams } from "react-router-dom";
+import { useParams, useHistory } from "react-router-dom";
+import { connect } from 'react-redux'
 import useLocalStorage from 'src/hooks/useLocalStorage';
-import { Select, Table, Popconfirm, Layout, Tag, List, Row, Col, Card, Tooltip, message } from 'antd';
+import { Select, Table, Popconfirm, Tag, List, Row, Col, Card, Tooltip, Button, message } from 'antd';
 import { ReloadOutlined, CopyOutlined } from '@ant-design/icons';
 import NumberDisplay from './numberDisplay';
+import FundLine from './fundLine';
 import { searchFund, getFundInfo } from 'src/service';
-import { addChineseUnit, copyTextToClipboard } from 'src/utils/common';
-import { timeRelative } from 'src/utils/enum';
+import { sendLog, addChineseUnit, copyTextToClipboard } from 'src/utils/common';
+import { timeRelative, hqKeys } from 'src/utils/enum';
+// @ts-ignore
+import { industryColumns, stockColumns, zfColumns, hqColumns } from 'src/utils/rendered.tsx';
 import { debounce, flatten } from 'lodash';
 
 const { Option } = Select;
-const { Content } = Layout;
+
 
 const formatRMB = addChineseUnit();
 
@@ -24,46 +28,12 @@ const getTags = (record) => {
 }
 
 const listRendered = (record) => {
-  const zfColumns = [
-    {
-      title: '时间区间',
-      key: 'title',
-      render: (item) => timeRelative[item.title],
-    },
-    {
-      title: '收益率',
-      key: 'syl',
-      render: (item) => <NumberDisplay value={item.syl+ '%'} />,
-    },
-    {
-      title: '同类排行',
-      key: 'rank',
-      render: (item) => `${item.rank || '-'}/${item.sc || '-'}`,
-    },
-  ];
-  const hqColumns = [
-    {
-      title: '名称',
-      key: 'title',
-      dataIndex: 'title',
-    },
-    {
-      title: '数据',
-      key: 'value',
-      dataIndex: 'value',
-    },
-    {
-      title: '排名',
-      key: 'rank',
-      dataIndex: 'rank',
-    }
-  ];
   return [
     {
       label: '标签',
       hide: !getTags(record).length,
       rendered: () => getTags(record).map(
-        (tag) => <Tag color="processing">{ tag }</Tag>
+        (tag) => <Tag key={tag} color="processing">{ tag }</Tag>
       ),
     },
     {
@@ -98,61 +68,15 @@ const listRendered = (record) => {
     {
       label: '行情数据',
       rendered: () => {
-        const keys = [{
-          title: '近1年夏普比率',
-          key: 'SHARP1',
-          rank1: 'SHARP_1NRANK',
-          rank2: 'SHARP_1NFSC'
-        }, {
-          title: '近3年夏普比率',
-          key: 'SHARP3',
-          rank1: 'SHARP_3NRANK',
-          rank2: 'SHARP_3NFSC'
-        }, {
-          title: '近5年夏普比率',
-          key: 'SHARP5',
-          rank1: 'SHARP_5NRANK',
-          rank2: 'SHARP_5NFSC'
-        }, {
-          title: '近1年最大回撤（%）',
-          key: 'MAXRETRA1',
-          rank1: 'MAXRETRA_1NRANK',
-          rank2: 'MAXRETRA_1NFSC'
-        }, {
-          title: '近3年最大回撤（%）',
-          key: 'MAXRETRA3',
-          rank1: 'MAXRETRA_3NRANK',
-          rank2: 'MAXRETRA_3NFSC'
-        }, {
-          title: '近5年最大回撤（%）',
-          key: 'MAXRETRA5',
-          rank1: 'MAXRETRA_5NRANK',
-          rank2: 'MAXRETRA_5NFSC'
-        }, {
-          title: '近1年波动率（%）',
-          key: 'STDDEV1',
-          rank1: 'STDDEV_1NRANK',
-          rank2: 'STDDEV_1NFSC'
-        },{
-          title: '近3年波动率（%）',
-          key: 'STDDEV3',
-          rank1: 'STDDEV_3NRANK',
-          rank2: 'STDDEV_3NFSC'
-        },{
-          title: '近5年波动率（%）',
-          key: 'STDDEV5',
-          rank1: 'STDDEV_5NRANK',
-          rank2: 'STDDEV_5NFSC'
-        },]
         const dataSource = record.TSSJ.Datas;
-        const list = keys.map((item) => {
+        const list = hqKeys.map((item) => {
           return {
+            key: item.title,
             title: item.title,
             value: dataSource[item.key] || '-',
             rank: `${dataSource[item.rank1] || '-'}/${dataSource[item.rank2] || '-'}`,
           }
         });
-        console.log(dataSource, list)
         return (<Table
           pagination={false}
           className="fund-detail-jd"
@@ -164,73 +88,17 @@ const listRendered = (record) => {
   ];
 };
 
-const stockColumns = (record) => {
-  const stockValues = record.stockValue || [];
-  return [
-    {
-      title: '股票代码',
-      key: 'code',
-      dataIndex: 'GPDM',
-    },
-    {
-      title: '股票名称',
-      key: 'name',
-      dataIndex: 'GPJC',
-    },
-    {
-      title: '涨跌幅',
-      key: 'value',
-      render: (item) => {
-        const value = stockValues.find((stock) => stock.f12 === item.GPDM)?.f3;
-        return <NumberDisplay value={value ? value + '%' : '-'} />
-      },
-    },
-    {
-      title: '持仓占比',
-      key: 'percent',
-      render: (item) => `${item.JZBL}%`,
-    },
-    {
-      title: '行业',
-      key: 'industry',
-      dataIndex: 'INDEXNAME',
-    },
-    {
-      title: '较上期持仓变化',
-      key: 'change',
-      render: (item) => `${item.PCTNVCHGTYPE} ${item.PCTNVCHG}%`,
-    },
-  ]
-}
 
-const industryColumns = () => {
-  return [
-    {
-      title: '行业名称',
-      key: 'name',
-      dataIndex: 'HYMC',
-    },
-    {
-      title: '占比',
-      key: 'percent',
-      render: (item) => `${item.ZJZBL}%`,
-    },
-    {
-      title: '数据日期',
-      key: 'date',
-      dataIndex: 'FSRQ',
-    },
-  ]
-}
-
-export default function FundList() {
+function FundList({ dispatch }) {
   const firstUpdate = useRef(true);
   const { codes = [] } = useParams();
+  const history = useHistory();
   const [ storage, setStorage ] = useLocalStorage('_storageCodes', [] as any[]);
   const [loading, setLoading] = useState(false);
   const [searchList, setSearchList] = useState([] as any[]);
   const [fundList, setFundList] = useState([] as any[]);
   const [expandableList, setExpandableList] = useState([] as any[]);
+  const [selectedRows, setSelectedRows] = useState([] as any[]);
 
   const initFundList = async (codes) => {
     setLoading(true);
@@ -242,8 +110,10 @@ export default function FundList() {
   useEffect(() => {
     if (codes && codes.length && codes.split(',')?.length) {
       initFundList(codes.split(','));
+      sendLog(`init fund width params: ${codes}`);
     } else if (storage.length) {
       initFundList(storage);
+      sendLog(`init fund width storage: ${storage}`);
     }
   }, []);
 
@@ -262,8 +132,12 @@ export default function FundList() {
   }, 300)
 
   const handleChange = async (code) => {
-    const info = await getFundInfo(code);
-    setFundList([info].concat(fundList));
+    if (!fundList.some((fund) => fund.FCODE === code)) {
+      const info = await getFundInfo(code);
+      setFundList([info].concat(fundList));
+    } else {
+      message.warning(`基金 ${code} 已在列表中`);
+    }
   }
 
   const handleDelete = (code: string) => {
@@ -273,6 +147,7 @@ export default function FundList() {
 
   const refresh = () => {
     initFundList(fundList.map((fund) => fund.key));
+    sendLog(`refresh fund list: ${fundList.map(item => item.key).join(',')}`);
   }
 
   const expand = (record) => {
@@ -284,7 +159,7 @@ export default function FundList() {
   }
 
   const copyUrl = async () => {
-    const url = `${window.location.host}/${fundList.map((fund) => fund.key).join(',')}`;
+    const url = `https://${window.location.host}/x-fund/#/${fundList.map((fund) => fund.key).join(',')}`;
     const isSuccess = await copyTextToClipboard(url);
     if (isSuccess) {
       message.success('已复制到剪贴板');
@@ -294,7 +169,8 @@ export default function FundList() {
   }
 
   const expandedRowRender = (record) => {
-    let industryData = (Object.values(record.JJCC.Datas.SectorAllocation)?.[0] || []) as any[];
+    const allocation = record?.JJCC?.Datas?.SectorAllocation || {};
+    let industryData = (Object.values(allocation)?.[0] || []) as any[];
     industryData = industryData.filter(item => Number(item.ZJZBL) > 0);
 
     return (
@@ -316,12 +192,15 @@ export default function FundList() {
           </Card>
         </Col>
         <Col span={16} className="table-nested-col">
+          <Card title="累积收益率走势">
+            <FundLine initialData={record.benefit} fundCode={record.FCODE} />
+          </Card>
           <Card title="基金持仓">
             <Table
               pagination={false}
               className="fund-stock-list"
               columns={stockColumns(record)}
-              dataSource={record.JJCC.Datas.InverstPosition.fundStocks}
+              dataSource={record.JJCC?.Datas?.InverstPosition.fundStocks || []}
               />
             </Card>
             <Card title="持仓行业占比" style={{marginTop: 16}}>
@@ -362,49 +241,69 @@ export default function FundList() {
     ) },
   ];
 
+  const goSimilarity = () => {
+    sendLog(`similarity: ${selectedRows.map(item => item.key).join(',')}`);
+    history.push('/similarity');
+  }
+
+  const rowSelection = {
+    onChange: (_, selectedRows) => {
+      setSelectedRows(selectedRows);
+      dispatch({
+        type: 'UPDATE',
+        funds: selectedRows,
+      });
+    },
+  };
+
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Content>
-      <Card title="X-FUND" bordered={false}>
-        <div className="fund-list">
-          <Row>
-            <Col span={8}>
-                <Select
-                showSearch
-                style={{ width: 200, marginBottom: 16, }}
-                placeholder='输入基金名称或代码搜索'
-                defaultActiveFirstOption={false}
-                showArrow={false}
-                filterOption={false}
-                onSearch={handleSearch}
-                onChange={handleChange}
-                notFoundContent={null}
-              >
-                {searchList.map((fund) => <Option key={fund.code} value={fund.code}>{fund.name}</Option>)}
-              </Select>
-            </Col>
-            <Col offset={8} span={7} style={{textAlign: 'right'}}>
-              <Tooltip title='刷新数据'>
-                <ReloadOutlined style={{marginRight: 8}} onClick={() => refresh()} />
-              </Tooltip>
-              <Tooltip title='如果你想跨设备/浏览器来查询已选的基金，请点击复制网址到粘贴板进行访问'>
-                <CopyOutlined onClick={() => copyUrl()} />
-              </Tooltip>
-            </Col>
-          </Row>
-          <Table
-            pagination={false}
-            loading={loading}
-            className="fund-list-nested"
-            expandIconColumnIndex={-1}
-            expandedRowKeys={expandableList}
-            columns={columns}
-            expandable={{ expandedRowRender }}
-            dataSource={fundList}
-          />
-       </div>
-      </Card>
-    </Content>
-    </Layout>
+    <div className="fund-list">
+      <Row>
+        <Col span={8}>
+            <Select
+            showSearch
+            style={{ width: 200, marginBottom: 16, }}
+            placeholder='输入基金名称或代码搜索'
+            defaultActiveFirstOption={false}
+            showArrow={false}
+            filterOption={false}
+            onSearch={handleSearch}
+            onChange={handleChange}
+            notFoundContent={null}
+          >
+            {searchList.map((fund) => <Option key={fund.code} value={fund.code}>{fund.name}</Option>)}
+          </Select>
+          <Tooltip title='选中2~10支基金可进行对比分析'>
+            <Button
+              disabled={selectedRows.length < 2 || selectedRows.length > 10}
+              onClick={() => goSimilarity()}
+              style={{ marginLeft: 8 }}>
+                分析持仓相似度
+            </Button>
+          </Tooltip>
+        </Col>
+        <Col offset={8} span={7} style={{textAlign: 'right'}}>
+          <Tooltip title='刷新数据'>
+            <ReloadOutlined style={{marginRight: 8}} onClick={() => refresh()} />
+          </Tooltip>
+          <Tooltip title='如果你想跨设备/浏览器来查询已选的基金，请点击复制网址到粘贴板进行访问'>
+            <CopyOutlined onClick={() => copyUrl()} />
+          </Tooltip>
+        </Col>
+      </Row>
+      <Table
+        pagination={false}
+        loading={loading}
+        className="fund-list-nested"
+        expandIconColumnIndex={-1}
+        rowSelection={rowSelection}
+        expandedRowKeys={expandableList}
+        columns={columns}
+        expandable={{ expandedRowRender }}
+        dataSource={fundList}
+      />
+    </div>
   );
 }
+
+export default connect()(FundList);

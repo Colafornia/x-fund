@@ -1,46 +1,20 @@
-# Getting Started with Create React App
+# X-FUND
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+[![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/colafornia/x-fund/)
+[![visitors](https://visitor-badge.glitch.me/badge?page_id=coloafornia.x-fund)](https://github.com/colafornia/x-fund/)
 
-## Available Scripts
+<https://blog.colafornia.me/x-fund/>
 
-In the project directory, you can run:
+个人基金查询分析工具，数据来源于天天基金、东方财富网。
 
-### `yarn start`
+## 功能
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+- 基金实时净值、估值查询
+- 基金持仓、历史收益率、夏普比率等数据查询
+- 2-10支基金的持仓集中度分析、收益率对比
+- LocalStorage 查询历史缓存
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## TODO
 
-### `yarn test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `yarn build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `yarn eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+- 基金筛选
+- 定投策略回测
